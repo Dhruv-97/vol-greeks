@@ -102,3 +102,5 @@ def test_upper_lower_bounds_are_hard_limits():
         implied_volatility(call_lower - 1e-3, BlackScholesInputs("call", S,K,T,r, 0.2))
     with pytest.raises(ValueError):
         implied_volatility(put_upper + 1e-3,  BlackScholesInputs("put",  S,K,T,r, 0.2))
+
+

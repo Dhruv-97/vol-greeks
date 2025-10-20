@@ -2,8 +2,10 @@ from __future__ import annotations
 import math
 from dataclasses import dataclass
 from typing import Literal, Tuple
-from vol_greeks.blackscholes import BlackScholesInputs, calculate_black_scholes_d1_d2, calculate_black_scholes_price
+from vol_greeks.blackscholes import BlackScholesInputs, calculate_black_scholes_d1_d2, calculate_black_scholes_price, _T_EXP
 
+
+PRICE_EPS = 1e-10
 
 def calculate_vega(inputs: BlackScholesInputs) -> float:
     """
@@ -19,7 +21,7 @@ def calculate_vega(inputs: BlackScholesInputs) -> float:
     if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     d1, _ = calculate_black_scholes_d1_d2(inputs)
-    vega = inputs.S * math.sqrt(inputs.T) * 1/(math.sqrt(2*math.pi)) * math.exp(-d1**2 / 2)
+    vega = inputs.S * math.exp(-inputs.q * inputs.T) * math.sqrt(inputs.T) * 1/(math.sqrt(2*math.pi)) * math.exp(-d1**2 / 2)
     return vega
 
 def implied_volatility(
@@ -44,11 +46,22 @@ def implied_volatility(
     Returns:
     float: The implied volatility of the option.
     """
-    if inputs.T <=0 or inputs.S <= 0 or inputs.K <=0 or option_market_price <=0:
+    if inputs.T <0 or inputs.S <= 0 or inputs.K <=0 or option_market_price < 0:
         raise ValueError("All inputs must be positive and greater than zero")
+    
+    if inputs.T <= _T_EXP:
+        intrinsic_value = max(0.0, inputs.S - inputs.K) if inputs.option_type == 'call' else max(0.0, inputs.K - inputs.S)
+        if abs(option_market_price-intrinsic_value) <= PRICE_EPS:
+            raise ValueError("Expiry --> 0 : Market price is at or below intrinsic value; cannot compute implied volatility/near 0.0.")
+        else:
+            raise ValueError("Expiry --> 0 : Implied volatility is undefined for non-intrinsic prices at expiry.")
+
     discount_factor = math.exp(-inputs.r * inputs.T)
-    intrinsic_value = max(0.0, inputs.S - inputs.K*discount_factor) if inputs.option_type == 'call' else max(0.0, inputs.K*discount_factor -inputs.S)
-    upper = inputs.S if inputs.option_type == 'call' else discount_factor*inputs.K
+    discount_q = math.exp(-inputs.q * inputs.T)
+    intrinsic_value = max(0.0, inputs.S * discount_q - inputs.K * discount_factor) if inputs.option_type == 'call' else max(0.0, inputs.K * discount_factor-inputs.S * discount_q)
+    
+    upper = inputs.S * discount_q if inputs.option_type == 'call' else discount_factor*inputs.K
+    
     if not (intrinsic_value - 1e-12 <= option_market_price <= upper + 1e-12): #marketPrice of the option is not inside the intrinsic value of the call or is worth more than the stock itself 
         raise ValueError("Market price is out of bounds given the other inputs.")
     return bisection(inputs, option_market_price, sigma_low, sigma_high, epsilon_price, epsilon_vol, max_iterations)
@@ -60,7 +73,8 @@ def sigma_adjustment_option_price_comparison(sigma: float, inputs: BlackScholesI
         K=inputs.K,
         T=inputs.T,
         r=inputs.r,
-        sigma=sigma
+        sigma=sigma,
+        q=inputs.q
     )
     return calculate_black_scholes_price(new_inputs) - option_market_price
 
@@ -99,7 +113,7 @@ def bisection(
     for i in range(max_iterations):    
         mid_sigma = (sigma_high+sigma_low)/2
         price_diff = sigma_adjustment_option_price_comparison(mid_sigma, inputs, option_market_price)
-        if abs(price_diff) < epsilon_price:
+        if abs(price_diff) < epsilon_price or abs(sigma_high - sigma_low) < epsilon_vol:
             return mid_sigma
         elif price_diff < 0:
             sigma_low = mid_sigma
@@ -132,6 +146,7 @@ def newton_raphson(
         T=inputs.T,
         r=inputs.r,
         sigma=(sigma_low + sigma_high) / 2,
+        q=inputs.q
     )
     sigma = new_inputs.sigma
 

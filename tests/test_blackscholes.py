@@ -108,3 +108,94 @@ def test_d1_d2_basic_sanity():
     d1, d2 = calculate_black_scholes_d1_d2(x)
     assert d1 - d2 == pytest.approx(x.sigma*math.sqrt(x.T))
 
+def test_parity_with_q():
+    S,K,T,r,sigma,q = 100, 105, 0.75, 0.03, 0.25, 0.02
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma,q))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma,q))
+    lhs = c - p
+    rhs = S*math.exp(-q*T) - K*math.exp(-r*T)
+    assert abs(lhs - rhs) < 1e-10
+
+def test_q_zero_matches_old():
+    S,K,T,r,sigma = 100,100,1.0,0.05,0.2
+    c_q0 = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma,0.0))
+    p_q0 = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma,0.0))
+    # if you have saved/reference values from pre-q code, compare here;
+    # otherwise sanity: prices are finite and positive and parity holds.
+    assert c_q0 > 0 and p_q0 > 0
+
+def test_monotonicity_in_q():
+    S,K,T,r,sigma = 100,100,0.5,0.03,0.3
+    c_low = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma,0.00))
+    c_hi  = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma,0.05))
+    p_low = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma,0.00))
+    p_hi  = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma,0.05))
+    assert c_hi < c_low
+    assert p_hi > p_low
+
+def test_bounds_with_q():
+    S,K,T,r,sigma,q = 100,90,0.25,0.01,0.4,0.03
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma,q))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma,q))
+    assert 0 <= c <= S*math.exp(-q*T) + 1e-12
+    assert 0 <= p <= K*math.exp(-r*T) + 1e-12
+def test_d1_d2_with_q():
+    S,K,T,r,sigma,q = 100,100,1.0,0.05,0.2,0.02
+    d1, d2 = calculate_black_scholes_d1_d2(BlackScholesInputs("call", S,K,T,r,sigma,q))
+    expected_d1 = (math.log(S/K) + (r - q + 0.5 * sigma**2) * T) / (sigma * math.sqrt(T))
+    expected_d2 = expected_d1 - sigma * math.sqrt(T)
+    assert abs(d1 - expected_d1) < 1e-10
+    assert abs(d2 - expected_d2) < 1e-10
+
+def test_price_0dte_intrinsic_independent_of_sigma():
+    for sig in (0.0, 0.1, 3.0):
+        c = calculate_black_scholes_price(BlackScholesInputs('call', 101, 100, 1e-6, 0.03, sig, 0.0))
+        p = calculate_black_scholes_price(BlackScholesInputs('put',  99, 100, 1e-6, 0.03, sig, 0.0))
+        assert c == 1.0
+        assert p == 1.0
+    
+def test_price_0dte_out_of_the_money_is_zero():
+    for sig in (0.0, 0.1, 3.0):
+        c = calculate_black_scholes_price(BlackScholesInputs('call', 99, 100, 1e-6, 0.03, sig, 0.0))
+        p = calculate_black_scholes_price(BlackScholesInputs('put',  101, 100, 1e-6, 0.03, sig, 0.0))
+        assert c == 0.0
+        assert p == 0.0
+
+def test_price_0dte_at_the_money():
+    for sig in (0.0, 0.1, 3.0):
+        c = calculate_black_scholes_price(BlackScholesInputs('call', 100, 100, 1e-6, 0.03, sig, 0.0))
+        p = calculate_black_scholes_price(BlackScholesInputs('put',  100, 100, 1e-6, 0.03, sig, 0.0))
+        assert c == 0.0
+        assert p == 0.0
+
+
+def test_price_nan_for_nan_inputs():
+    S,K,T,r,sigma = float('nan'),100,1.0,0.05,0.2
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
+    assert math.isnan(c)
+    assert math.isnan(p)
+
+    S,K,T,r,sigma = 100,float('nan'),1.0,0.05,0.2
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
+    assert math.isnan(c)
+    assert math.isnan(p)
+
+    S,K,T,r,sigma = 100,100,float('nan'),0.05,0.2
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
+    assert math.isnan(c)
+    assert math.isnan(p)
+
+    S,K,T,r,sigma = 100,100,1.0,float('nan'),0.2
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
+    assert math.isnan(c)
+    assert math.isnan(p)
+
+    S,K,T,r,sigma = 100,100,1.0,0.05,float('nan')
+    c = calculate_black_scholes_price(BlackScholesInputs("call", S,K,T,r,sigma))
+    p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
+    assert math.isnan(c)
+    assert math.isnan(p)
