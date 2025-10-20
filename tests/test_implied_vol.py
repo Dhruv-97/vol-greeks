@@ -1,7 +1,8 @@
 import math
 import pytest
 from vol_greeks.blackscholes import BlackScholesInputs, calculate_black_scholes_d1_d2, calculate_black_scholes_price
-from vol_greeks.implied_vol import implied_volatility, calculate_vega
+from vol_greeks.implied_vol import implied_volatility
+from vol_greeks.greeks import calculate_vega
 
 def test_calculate_implied_volatility():
     inputs = BlackScholesInputs(
@@ -103,4 +104,20 @@ def test_upper_lower_bounds_are_hard_limits():
     with pytest.raises(ValueError):
         implied_volatility(put_upper + 1e-3,  BlackScholesInputs("put",  S,K,T,r, 0.2))
 
+
+def test_iv_bounds_with_q():
+    S,K,T,r,q = 100,100,0.5,0.03,0.02
+    disc_r, disc_q = math.exp(-r*T), math.exp(-q*T)
+    c_upper = S*disc_q
+    p_upper = K*disc_r
+    assert implied_volatility(0.50, BlackScholesInputs('call', S,K,T,r,0.2,q)) >= 0.0
+    with pytest.raises(ValueError):
+        implied_volatility(c_upper+1e-4, BlackScholesInputs('call', S,K,T,r,0.2,q))
+
+
+def test_newton_falls_back_when_vega_tiny():
+    S,K,T,r,q = 100,200,1.0,0.03,0.0
+    price = calculate_black_scholes_price(BlackScholesInputs('call', S,K,T,r,0.01,q))
+    iv = implied_volatility(price, BlackScholesInputs('call', S,K,T,r,0.2,q))
+    assert iv >= 0.0
 

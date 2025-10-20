@@ -199,3 +199,13 @@ def test_price_nan_for_nan_inputs():
     p = calculate_black_scholes_price(BlackScholesInputs("put",  S,K,T,r,sigma))
     assert math.isnan(c)
     assert math.isnan(p)
+
+
+def test_price_0dte_intrinsic_independent_of_sigma():
+    for sig in (0.0, 0.1, 3.0):
+        c = calculate_black_scholes_price(BlackScholesInputs('call', 101, 100, 1e-6, 0.03, sig, 0.0))
+        p = calculate_black_scholes_price(BlackScholesInputs('put',  99, 100, 1e-6, 0.03, sig, 0.0))
+        assert c == 1.0
+        assert p == 1.0
+
+
