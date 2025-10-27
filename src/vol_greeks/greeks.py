@@ -19,7 +19,7 @@ def calculate_vega(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Vega of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -39,7 +39,7 @@ def calculate_delta(inputs: BlackScholesInputs) -> float:
     float: The Delta of the option.
     """
 
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     
     if inputs.T <= _T_EXP:
@@ -68,7 +68,7 @@ def calculate_gamma(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Gamma of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -88,7 +88,7 @@ def calculate_theta(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Theta of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -115,7 +115,7 @@ def calculate_rho(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Rho of the option.
     """
-    if inputs.T <= 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -140,7 +140,7 @@ def calculate_charm(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Charm of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -169,7 +169,7 @@ def calculate_vanna(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Vanna of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
@@ -189,7 +189,7 @@ def calculate_volga(inputs: BlackScholesInputs) -> float:
     Returns:
     float: The Volga of the option.
     """
-    if inputs.T <= 0 or inputs.sigma <= 0 or inputs.S <= 0 or inputs.K <= 0:
+    if inputs.T < 0 or inputs.sigma < 0 or inputs.S <= 0 or inputs.K <= 0:
         raise ValueError("All inputs must be positive and greater than zero")
     if inputs.T <= _T_EXP:
         return 0.0
