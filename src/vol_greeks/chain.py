@@ -14,6 +14,8 @@ class ChainRow:
     T: float  # Time to expiration in years
     r: float  # Risk-free interest rate
     q: float  # Dividend yield
+    # oi: int  # Open interest
+    # volume: int  # Volume
     expiry: datetime  # Expiration date of the option
     mid_option_market_price: float  # Market price of the option
 
