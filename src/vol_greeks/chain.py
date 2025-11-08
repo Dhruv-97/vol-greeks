@@ -60,7 +60,8 @@ def getIVPerRow(chain_rows: Iterable[ChainRow]) -> List[ChainRow]:
     """
     res = []
     for row in chain_rows:
-        row.T = time_till_expiry(row.expiry)
+        if not row.T or row.T <= 0:
+            row.T = time_till_expiry(row.expiry)
         inputs = BlackScholesInputs(
             S=row.S,
             K=row.K,
